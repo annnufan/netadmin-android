@@ -20,10 +20,10 @@ public final class NetworkUtils {
         try {
 
             if (InetAddress.getByName(ip).isReachable(100)) {
-                Log.d(TAG, ip + " Successful ping");
+                System.out.println(ip + " Successful ping");
                 return true;
             } else {
-                Log.d(TAG, ip + " Failed ping");
+                System.out.println(ip + " Failed ping");
                 return false;
             }
         } catch (Exception e) {

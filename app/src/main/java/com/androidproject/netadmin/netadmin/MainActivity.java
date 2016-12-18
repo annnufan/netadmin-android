@@ -57,7 +57,7 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
 
             @Override
             public void run() {
-                String basicIP = "192.168.0.";
+                String basicIP = "192.168.1.";
                 ArrayList<Computer> scannedDevices = new ArrayList<>();
                 int num = 1;
                 for (int i = 1; i < 255; i++) {
@@ -65,11 +65,9 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
                         scannedDevices.add(new Computer(num, basicIP + Integer.toString(i), "basic name", Color.GOOD));
                     }
                 }
-                if (!devices.isEmpty()) {
+                Log.d(TAG, Integer.toString(scannedDevices.size()));
+                if (!scannedDevices.isEmpty()) {
                     devices = scannedDevices;
-                    ComputerAdapter adapter = new ComputerAdapter(recyclerView.getContext());
-                    adapter.setComputers(devices);
-                    recyclerView.setAdapter(adapter);
                 }
             }
         }
@@ -85,6 +83,10 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
             Context context = getApplicationContext();
             Toast toast = Toast.makeText(context, text, duration);
             toast.show();
+        } else {
+            ComputerAdapter adapter = new ComputerAdapter(recyclerView.getContext());
+            adapter.setComputers(devices);
+            recyclerView.setAdapter(adapter);
         }
 
     }
