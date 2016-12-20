@@ -1,6 +1,7 @@
 package com.androidproject.netadmin.netadmin;
 
-import android.content.Context;
+import android.content.pm.ActivityInfo;
+import android.os.AsyncTask;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -8,6 +9,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.androidproject.netadmin.netadmin.Utils.ConfigUtils;
@@ -34,17 +36,23 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
 
     private RecyclerView recyclerView;
 
+    private ProgressBar progressBar;
+
     private ComputerAdapter adapter = null;
+
+    private boolean onScanProcess;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+//        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         devices = new ArrayList<>();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         swipe = (SwipeRefreshLayout) findViewById(R.id.refresh);
         swipe.setOnRefreshListener(this);
-
+        progressBar = (ProgressBar) findViewById(R.id.progress);
+        progressBar.setVisibility(View.INVISIBLE);
         recyclerView = (RecyclerView) findViewById(R.id.recycler);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         adapter = new ComputerAdapter(this);
@@ -121,13 +129,18 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
     }
 
     public void onScanClick(View view) {
-        final String TAG = "On scan click ";
-        class Scan implements Runnable {
-
-            private Scan(){};
+        class Scanner extends AsyncTask<Void, Void, ArrayList<Computer>> {
+            final String TAG = "Scanner ";
 
             @Override
-            public void run() {
+            protected void onPostExecute(ArrayList<Computer> result) {
+                setDevices(result);
+                onScanProcess = false;
+            }
+
+            @Override
+            protected ArrayList<Computer> doInBackground(Void... params) {
+                onScanProcess = true;
                 String basicIP = "192.168.1.";
 //                String basicIP = "127.0.0.";
                 ArrayList<Computer> scannedDevices = new ArrayList<>();
@@ -139,6 +152,9 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
                         try {
                             InetAddress addr = InetAddress.getByName(ip);
                             name = addr.getCanonicalHostName();
+                            if (name.equals(ip)) {
+                                name = "--";
+                            }
                         } catch (UnknownHostException e) {
                             name = "invalid name";
                         }
@@ -146,34 +162,37 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
                     }
                 }
                 Log.d(TAG, Integer.toString(scannedDevices.size()));
-                if (!scannedDevices.isEmpty()) {
-                    devices = scannedDevices;
-                }
+                return scannedDevices;
             }
         }
-
-        Thread thread = new Thread(new Scan());
-        thread.start();
-
-        while (thread.isAlive());
-        if (devices.isEmpty()) {
-            Log.d(TAG, "Computers in network not found");
-            String text = "Not find computers in network";
+        recyclerView.setVisibility(View.INVISIBLE);
+        progressBar.setVisibility(View.VISIBLE);
+        if (onScanProcess) {
+            String text = "Scanning in process";
             int duration = Toast.LENGTH_SHORT;
             Toast toast = Toast.makeText(getApplicationContext(), text, duration);
             toast.show();
         } else {
-            adapter.setComputers(devices);
+            new Scanner().execute();
         }
-
     }
 
-    class Update implements Runnable {
+    private void setDevices(ArrayList<Computer> devices) {
+        progressBar.setVisibility(View.INVISIBLE);
+        adapter.setComputers(devices);
+        recyclerView.setVisibility(View.VISIBLE);
+    }
 
-        private Update(){};
+    class Updater extends AsyncTask<ArrayList<Computer>, Void, ArrayList<Computer>> {
 
         @Override
-        public void run() {
+        protected void onPostExecute(ArrayList<Computer> devices) {
+            setDevices(devices);
+        }
+
+        @Override
+        protected ArrayList<Computer> doInBackground(ArrayList<Computer>... params) {
+            ArrayList<Computer> devices = params[0];
             for (Computer device : devices) {
                 if (ping(device.getIP())) {
                     device.setState(State.ONLINE);
@@ -181,6 +200,7 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
                     device.setState(State.OFFLINE);
                 }
             }
+            return devices;
         }
     }
 
@@ -192,13 +212,7 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
         if (configFile.exists()) {
             devices = ConfigUtils.getConfig(configFile);
             Log.d(TAG, "devices size " + Integer.toString(devices.size()));
-            Thread thread = new Thread(new Update());
-            thread.start();
-
-            while (thread.isAlive());
-            if (!devices.isEmpty()) {
-                adapter.setComputers(devices);
-            }
+            new Updater().execute(devices);
         } else {
             Log.d(TAG, "Config file not found");
             String text = "Config file not found";
@@ -236,13 +250,7 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
                     Toast toast = Toast.makeText(getApplicationContext(), text, duration);
                     toast.show();
                 } else {
-                    Thread thread = new Thread(new Update());
-                    thread.start();
-
-                    while (thread.isAlive());
-                    if (!devices.isEmpty()) {
-                        adapter.setComputers(devices);
-                    }
+                    new Updater().execute(devices);
                 }
             }
         }, 3000);
