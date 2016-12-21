@@ -189,6 +189,7 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
             Toast toast = Toast.makeText(getApplicationContext(), text, duration);
             toast.show();
         }
+        this.devices = devices;
         adapter.setComputers(devices);
     }
 
@@ -234,6 +235,7 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
     public void onSaveClick(View view) {
         final String TAG = "On save click ";
         File configFile = new File(getFilesDir(), FILENAME);
+        Log.d(TAG, Integer.toString(devices.size()));
         if (devices.isEmpty()) {
             Log.d(TAG, "Nothing to save");
             String text = "Nothing to save";
