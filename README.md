@@ -6,7 +6,7 @@ NetAdmin -- application for Android that is mobile verion of desctop NetAdmin us
 
 ### **Developers**
 
-[Roman Melnikov)](https://github.com/rvem)</br>
+[Roman Melnikov](https://github.com/rvem)</br>
 [Appolinaria Romanova](https://github.com/Zlok)</br>
 [Anna Kopeliovich](https://github.com/annnufan)</br>
 
